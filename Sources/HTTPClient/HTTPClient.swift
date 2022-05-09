@@ -108,6 +108,16 @@ private extension HTTPClient {
         return configuration
     }
     
+    func prepareRequest<Tparam: Encodable, Tresponse: Decodable>(
+        path: String, parameters: Tparam?, method: (URL, Tparam?, ContentType) -> URLRequest, contentType: ContentType = .applicationJson,
+        completionHandler: @escaping (_ result: Result<Tresponse, Error>) -> Void) -> URLRequest? {
+        guard let url = URL(string: path, relativeTo: baseURL) else {
+            completionHandler(.failure(NSError(domain: "Invalid path \"\(path)\"", code: .zero)))
+            return nil
+        }
+        return method(url, parameters, contentType)
+    }
+    
     func makeRequest<Tparam: Encodable, Tresponse: Decodable>(
         request: URLRequest? = nil,
         path: String = "/",
@@ -115,9 +125,9 @@ private extension HTTPClient {
         method: (URL, Tparam?, ContentType) -> URLRequest,
         contentType: ContentType = .applicationJson,
         completionHandler: @escaping (_ result: Result<Tresponse, Error>) -> Void) {
-            guard let url = URL(string: path, relativeTo: baseURL) else { return }
+        let request = request ?? prepareRequest(path: path, parameters: parameters, method: method, completionHandler: completionHandler)
+        guard let request = request  else { return }
         let session = URLSession(configuration: sessionConfiguration, delegate: nil, delegateQueue: nil)
-        let request = request ?? method(url, parameters, contentType)
         let handler = requestCompletionHandler(completionHandler)
         let task = session.dataTask(with: request, completionHandler: handler)
         task.resume()
@@ -125,11 +135,8 @@ private extension HTTPClient {
     }
     
     func get<T: Encodable>(url: URL, parameters: T?, contentType: ContentType) -> URLRequest {
-        var fullURL = url
         let urlComponents = getUrlComponents(url: url, parameters: parameters)
-        if let absoluteURL = urlComponents?.url {
-            fullURL = absoluteURL
-        }
+        let fullURL = urlComponents?.url ?? url
         
         var request = URLRequest(url: fullURL)
         request.httpMethod = Method.GET.rawValue

@@ -2,10 +2,7 @@ import XCTest
 @testable import HTTPClient
 
 final class HTTPClientTests: XCTestCase {
-    func testExample() throws {
-        // This is an example of a functional test case.
-        // Use XCTAssert and related functions to verify your tests produce the correct
-        // results.
+    func testRandomAPIShouldFail() throws {
         guard let url = URL(string: "http://grawenawer.com") else { return XCTFail() }
         let client = HTTPClient(baseURL: url)
         let expectation = expectation(description: "response should come")
@@ -16,6 +13,6 @@ final class HTTPClientTests: XCTestCase {
             case .failure: XCTAssert(true)
             }
         }
-        wait(for: [expectation], timeout: 5.0)
+        wait(for: [expectation], timeout: 1.0)
     }
 }
